@@ -7,6 +7,7 @@ import model.Question;
 import model.User;
 
 import javax.swing.*;
+import java.awt.*;
 import java.sql.SQLException;
 import java.util.List;
 
@@ -14,9 +15,24 @@ public class QuestionListView extends JFrame {
 
     public QuestionListView(User user) {
         setTitle("Questions List");
-        setSize(600, 400);
+        setSize(1000, 400);
         setLocationRelativeTo(null);
-        setLayout(new BoxLayout(getContentPane(), BoxLayout.Y_AXIS));
+        setDefaultCloseOperation(EXIT_ON_CLOSE);
+
+        // Painel
+        JPanel mainPanel = new JPanel();
+        mainPanel.setLayout(new BoxLayout(mainPanel, BoxLayout.Y_AXIS));
+
+        // Scroll
+        JScrollPane scrollPane = new JScrollPane(mainPanel,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_NEVER
+        );
+        // rolagem
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        // scrollpane
+        add(scrollPane);
 
         try {
             QuestionDAO qDao = new QuestionDAO();
@@ -27,15 +43,19 @@ public class QuestionListView extends JFrame {
                     : qDao.readByUserId(user.getId());
 
             for (Question q : questions) {
-                JPanel panel = new JPanel();
-                panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+                
+                JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 10));
                 panel.setBorder(BorderFactory.createTitledBorder(q.getTitle()));
 
+                // scroll texto
                 JTextArea body = new JTextArea(q.getBody());
                 body.setEditable(false);
-                panel.add(body);
+                body.setLineWrap(true);
+                body.setWrapStyleWord(true);
+                JScrollPane bodyScroll = new JScrollPane(body);
+                bodyScroll.setPreferredSize(new Dimension(550, 80));
+                panel.add(bodyScroll);
 
-                // BOTÃO PARA VER RESPOSTAS
                 JButton viewAnswersBtn = new JButton("View Answers");
                 panel.add(viewAnswersBtn);
                 viewAnswersBtn.addActionListener(e -> {
@@ -51,14 +71,12 @@ public class QuestionListView extends JFrame {
                     }
                 });
 
-                // SOMENTE ADMIN PODE RESPONDER
                 if ("admin".equals(user.getRole())) {
                     JButton answerBtn = new JButton("Answer");
                     panel.add(answerBtn);
                     answerBtn.addActionListener(e -> new AnswerFormView(user, q));
                 }
 
-                // DELETE em perguntas RESPONDIDAS
                 if (!aDao.findByQuestionId(q.getId()).isEmpty()) {
                     JButton deleteBtn = new JButton("Delete Question");
                     panel.add(deleteBtn);
@@ -81,8 +99,10 @@ public class QuestionListView extends JFrame {
                     });
                 }
 
-                add(panel);
+                // Adicionar cada painel de pergunta ao mainPanel
+                mainPanel.add(panel);
             }
+
         } catch (SQLException e) {
             e.printStackTrace();
         }
